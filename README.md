@@ -167,24 +167,29 @@ All results are saved to `/root/Desktop/ISA/` with the following structure:
 
 ```
 ISA/
-├── network/          # Network discovery results
-├── nmap/            # Nmap scan outputs
-├── zonetransfer/    # DNS zone transfer attempts
-├── anonymousenum/   # Anonymous enumeration results
-├── armitage/        # Metasploit module outputs
-├── versions/        # OS version information
-├── sql/             # SQL server findings
-├── telnets/         # Telnet service results
-├── smtprelay/       # SMTP relay test results
-├── webfiltering/    # Web filtering test results
-├── gowitness/       # Web screenshots and reports
-├── isp/             # ISP information
-├── netaudit/        # NetAudit results
-├── outbound/        # Outbound connection tests
-├── snmp/            # SNMP enumeration results
-├── shares/          # SMB share enumeration
-├── DC_RDP/          # Domain controller RDP tests
-└── wireshark/       # Network packet captures (.pcap files)
+├── Scans/
+│   ├── Armitage/           # Metasploit module outputs
+│   ├── EyeWitness/         # Web screenshots
+│   ├── Network/            # Network discovery results
+│   ├── Nmap/               # Nmap scan outputs
+│   ├── ShareScan/          # SMB share enumeration
+│   ├── SNMP/               # SNMP enumeration results
+│   ├── SQLping/            # SQL server findings
+│   ├── Versions/           # OS version information
+│   ├── Vulnerability/      # Vulnerability assessments
+│   ├── Wifi/               # Wireless scanning results
+│   └── Wireshark/          # Network packet captures (.pcap files)
+├── Screenshots/
+│   ├── Default Passwords/  # Default credential test results
+│   ├── DNS Zone Transfer/  # DNS zone transfer attempts
+│   ├── Outbound Connections/ # Outbound connection tests
+│   ├── RDP to DC/          # Domain controller RDP tests
+│   ├── SMTP Relay/         # SMTP relay test results
+│   ├── telnet/             # Telnet service results
+│   ├── WebFiltering/       # Web filtering test results
+│   └── WPAD/               # WPAD detection results
+├── isp/                    # ISP information
+└── netaudit/               # NetAudit results
 ```
 
 ## Security Considerations

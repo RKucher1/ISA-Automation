@@ -32,11 +32,15 @@ if [ -d "/root/Desktop/ISA" ]; then
 	mv /root/Desktop/ISA /root/Desktop/ISAold
 	echo "Moved the ISA directory into the ISAold directory..."
 	wait
-	mkdir -p /root/Desktop/ISA/{network,nmap,zonetransfer,anonymousenum,armitage,versions,sql,telnets,smtprelay,webfiltering,gowitness,isp,netaudit,outbound,snmp,shares,DC_RDP,wireshark}
-	echo "Created a new ISA directory on the desktop..."
+	mkdir -p /root/Desktop/ISA/Scans/{Armitage,EyeWitness,Network,Nmap,ShareScan,SNMP,SQLping,Versions,Vulnerability,Wifi,Wireshark}
+	mkdir -p /root/Desktop/ISA/Screenshots/{"Default Passwords","DNS Zone Transfer","Outbound Connections","RDP to DC","SMTP Relay",telnet,WebFiltering,WPAD}
+	mkdir -p /root/Desktop/ISA/{isp,netaudit}
+	echo "Created a new ISA directory structure on the desktop..."
 else
-	mkdir -p /root/Desktop/ISA/{network,nmap,zonetransfer,anonymousenum,armitage,versions,sql,telnets,smtprelay,webfiltering,gowitness,isp,netaudit,outbound,snmp,shares,DC_RDP,wireshark}
-	echo "Created the ISA directory on the desktop..."
+	mkdir -p /root/Desktop/ISA/Scans/{Armitage,EyeWitness,Network,Nmap,ShareScan,SNMP,SQLping,Versions,Vulnerability,Wifi,Wireshark}
+	mkdir -p /root/Desktop/ISA/Screenshots/{"Default Passwords","DNS Zone Transfer","Outbound Connections","RDP to DC","SMTP Relay",telnet,WebFiltering,WPAD}
+	mkdir -p /root/Desktop/ISA/{isp,netaudit}
+	echo "Created the ISA directory structure on the desktop..."
 fi
 
 #Function that creates a spinning graphic to let you know the script is still working when no terminal output is seen
@@ -359,7 +363,7 @@ should_skip_section() {
 # Function to extract subnets from old network.txt file
 extract_subnets_from_old_network() {
     local old_network_file="$1"
-    local output_file="/root/Desktop/ISA/network/ips.txt"
+    local output_file="/root/Desktop/ISA/Scans/Network/ips.txt"
 
     echo "[INFO] Processing old network.txt file..."
     echo "[INFO] Extracting unique /16 subnets..."
@@ -672,7 +676,7 @@ if ! should_skip_section "PACKET_CAPTURE" "$RESUME_FROM"; then
         if [ -n "$interface" ]; then
             # Generate filename with timestamp
             timestamp=$(date +%Y%m%d_%H%M%S)
-            pcap_file="/root/Desktop/ISA/wireshark/capture_${timestamp}.pcap"
+            pcap_file="/root/Desktop/ISA/Scans/Wireshark/capture_${timestamp}.pcap"
 
             echo "[INFO] Starting packet capture on interface: $interface"
             echo "[INFO] Capturing 10,000 packets..."
@@ -685,7 +689,7 @@ if ! should_skip_section "PACKET_CAPTURE" "$RESUME_FROM"; then
             # -c: packet count
             # -w: output file
             # -q: quiet mode (less verbose)
-            tshark -i "$interface" -c 10000 -w "$pcap_file" -q 2>&1 | tee -a /root/Desktop/ISA/wireshark/capture.log
+            tshark -i "$interface" -c 10000 -w "$pcap_file" -q 2>&1 | tee -a /root/Desktop/ISA/Scans/Wireshark/capture.log
 
             if [ -f "$pcap_file" ]; then
                 # Get file size in human-readable format
@@ -723,11 +727,11 @@ if ! should_skip_section "PING_SWEEPS" "$RESUME_FROM"; then
 
 if [ $SKIP_PSWEEPS = "y" ]; then
 	echo "Skipping ping sweeps and creating a blank network.txt file."
-	touch /root/Desktop/ISA/network/network.txt
+	touch /root/Desktop/ISA/Scans/Network/network.txt
 	echo ""
 	echo "The network.txt file will open shortly. Make the necessary changes to the network.txt file and then save it."
 	sleep 3
-	mousepad /root/Desktop/ISA/network/network.txt &
+	mousepad /root/Desktop/ISA/Scans/Network/network.txt &
 	mousepad_pid=$!
 	while true; do
 		if ! ps -p $mousepad_pid > /dev/null; then
@@ -799,7 +803,7 @@ else
 			if [ "$all_valid" = true ]; then
 				read -p "Do you want to exclude these IP addresses? y/n: " confirm
 				if [ "$confirm" == "y" ]; then
-					echo "$normalized_ip_list" | tee -a /root/Desktop/ISA/network/ipexclusions.txt
+					echo "$normalized_ip_list" | tee -a /root/Desktop/ISA/Scans/Network/ipexclusions.txt
 					echo "The IP addresses have been excluded."
 					break
 				else
@@ -910,7 +914,7 @@ else
 				read -p "Enter a valid internal IP address range (e.g., 10.2.0.1 10.2.255.255): " ip_range
 				if is_valid_ip_range "$ip_range"; then
 					echo "This IP address range will be scanned:"
-					echo "$ip_range" | tee -a /root/Desktop/ISA/network/ips.txt
+					echo "$ip_range" | tee -a /root/Desktop/ISA/Scans/Network/ips.txt
 					echo ""
 					break
 				else
@@ -933,25 +937,25 @@ else
 	if [ $confirm4 == 'y' ]; then
 		while read line1; do
 			filename=$(echo "$line1" | sed 's/\([0-9]\+\.[0-9]\+\)\.[0-9]\+\.[0-9]\+.*/\1/')
-			ipscan -sq -f:range $line1 -o "/root/Desktop/ISA/network/$filename.txt" > /dev/null 2>&1 &
-		done < '/root/Desktop/ISA/network/ips.txt'
+			ipscan -sq -f:range $line1 -o "/root/Desktop/ISA/Scans/Network/$filename.txt" > /dev/null 2>&1 &
+		done < '/root/Desktop/ISA/Scans/Network/ips.txt'
 		spinner
 		wait
-		for line1 in $(cat '/root/Desktop/ISA/network/ips.txt'); do
+		for line1 in $(cat '/root/Desktop/ISA/Scans/Network/ips.txt'); do
 			filename=$(echo "$line1" | sed 's/\([0-9]\+\.[0-9]\+\)\.[0-9]\+\.[0-9]\+.*/\1/')
-			sed '1,7d' "/root/Desktop/ISA/network/$filename.txt" | awk '{print $1}' | sort | uniq | tee -a /root/Desktop/ISA/network/userinput.txt
+			sed '1,7d' "/root/Desktop/ISA/Scans/Network/$filename.txt" | awk '{print $1}' | sort | uniq | tee -a /root/Desktop/ISA/Scans/Network/userinput.txt
 		done
 	fi
 	wait
 	echo ""
 	echo "Finished with user input scans. Starting default scans. Do not leave you cursor hovering over the taskbar as it will cause issues when the ping sweeps complete..."
-	ipscan -sq -f:range 10.0.0.1 10.0.255.255 -o /root/Desktop/ISA/network/10.0.txt > /dev/null 2>&1 &
-	ipscan -sq -f:range 10.1.0.1 10.1.255.255 -o /root/Desktop/ISA/network/10.1.txt > /dev/null 2>&1 &
-	ipscan -sq -f:range 10.10.0.1 10.10.255.255 -o /root/Desktop/ISA/network/10.10.txt > /dev/null 2>&1 &
-	ipscan -sq -f:range 10.100.0.1 10.100.255.255 -o /root/Desktop/ISA/network/10.100.txt > /dev/null 2>&1 &
-	ipscan -sq -f:range 172.16.0.1 172.16.255.255 -o /root/Desktop/ISA/network/172.16.txt > /dev/null 2>&1 &
-	ipscan -sq -f:range 172.31.0.1 172.31.255.255 -o /root/Desktop/ISA/network/172.31.txt > /dev/null 2>&1 &
-	ipscan -sq -f:range 192.168.0.1 192.168.255.255 -o /root/Desktop/ISA/network/192.168.txt > /dev/null 2>&1 &
+	ipscan -sq -f:range 10.0.0.1 10.0.255.255 -o /root/Desktop/ISA/Scans/Network/10.0.txt > /dev/null 2>&1 &
+	ipscan -sq -f:range 10.1.0.1 10.1.255.255 -o /root/Desktop/ISA/Scans/Network/10.1.txt > /dev/null 2>&1 &
+	ipscan -sq -f:range 10.10.0.1 10.10.255.255 -o /root/Desktop/ISA/Scans/Network/10.10.txt > /dev/null 2>&1 &
+	ipscan -sq -f:range 10.100.0.1 10.100.255.255 -o /root/Desktop/ISA/Scans/Network/10.100.txt > /dev/null 2>&1 &
+	ipscan -sq -f:range 172.16.0.1 172.16.255.255 -o /root/Desktop/ISA/Scans/Network/172.16.txt > /dev/null 2>&1 &
+	ipscan -sq -f:range 172.31.0.1 172.31.255.255 -o /root/Desktop/ISA/Scans/Network/172.31.txt > /dev/null 2>&1 &
+	ipscan -sq -f:range 192.168.0.1 192.168.255.255 -o /root/Desktop/ISA/Scans/Network/192.168.txt > /dev/null 2>&1 &
 	spinner
 	wait
 	echo ""
@@ -961,21 +965,21 @@ else
 
 	#Creates network.txt file and removes the the 192.168.56.1, windows, kali, and excluded IP addresses. Makes a .bak file if already exists. Also open the network.txt file for final confirmation.
 	echo "Creating network.txt..."
-	sed '1,7d' /root/Desktop/ISA/network/10.0.txt | awk '{print $1}' |tee -a /root/Desktop/ISA/network/default.txt &&
-	sed '1,7d' /root/Desktop/ISA/network/10.1.txt | awk '{print $1}' |tee -a /root/Desktop/ISA/network/default.txt &&
-	sed '1,7d' /root/Desktop/ISA/network/10.10.txt | awk '{print $1}' |tee -a /root/Desktop/ISA/network/default.txt &&
-	sed '1,7d' /root/Desktop/ISA/network/10.100.txt | awk '{print $1}' |tee -a /root/Desktop/ISA/network/default.txt &&
-	sed '1,7d' /root/Desktop/ISA/network/172.16.txt | awk '{print $1}' | tee -a /root/Desktop/ISA/network/default.txt &&
-	sed '1,7d' /root/Desktop/ISA/network/172.31.txt | awk '{print $1}' | tee -a /root/Desktop/ISA/network/default.txt &&
-	sed '1,7d' /root/Desktop/ISA/network/192.168.txt | awk '{print $1}' | tee -a /root/Desktop/ISA/network/default.txt
-	cat /root/Desktop/ISA/network/userinput.txt /root/Desktop/ISA/network/default.txt > /root/Desktop/ISA/network/draft.txt
+	sed '1,7d' /root/Desktop/ISA/Scans/Network/10.0.txt | awk '{print $1}' |tee -a /root/Desktop/ISA/Scans/Network/default.txt &&
+	sed '1,7d' /root/Desktop/ISA/Scans/Network/10.1.txt | awk '{print $1}' |tee -a /root/Desktop/ISA/Scans/Network/default.txt &&
+	sed '1,7d' /root/Desktop/ISA/Scans/Network/10.10.txt | awk '{print $1}' |tee -a /root/Desktop/ISA/Scans/Network/default.txt &&
+	sed '1,7d' /root/Desktop/ISA/Scans/Network/10.100.txt | awk '{print $1}' |tee -a /root/Desktop/ISA/Scans/Network/default.txt &&
+	sed '1,7d' /root/Desktop/ISA/Scans/Network/172.16.txt | awk '{print $1}' | tee -a /root/Desktop/ISA/Scans/Network/default.txt &&
+	sed '1,7d' /root/Desktop/ISA/Scans/Network/172.31.txt | awk '{print $1}' | tee -a /root/Desktop/ISA/Scans/Network/default.txt &&
+	sed '1,7d' /root/Desktop/ISA/Scans/Network/192.168.txt | awk '{print $1}' | tee -a /root/Desktop/ISA/Scans/Network/default.txt
+	cat /root/Desktop/ISA/Scans/Network/userinput.txt /root/Desktop/ISA/Scans/Network/default.txt > /root/Desktop/ISA/Scans/Network/draft.txt
 	if [ "$confirm11" != 'n' ]; then
 		while IFS= read -r ip; do
-			sed -i "/$ip/d" /root/Desktop/ISA/network/draft.txt
-		done < /root/Desktop/ISA/network/ipexclusions.txt
+			sed -i "/$ip/d" /root/Desktop/ISA/Scans/Network/draft.txt
+		done < /root/Desktop/ISA/Scans/Network/ipexclusions.txt
 	fi
 	wait
-	sed -e 's/192.168.56.1//g' -e "s/$kaliIP//g" -e "s/$windows//g" /root/Desktop/ISA/network/draft.txt | sort | uniq | awk 'NF' > /root/Desktop/ISA/network/network.txt &&
+	sed -e 's/192.168.56.1//g' -e "s/$kaliIP//g" -e "s/$windows//g" /root/Desktop/ISA/Scans/Network/draft.txt | sort | uniq | awk 'NF' > /root/Desktop/ISA/Scans/Network/network.txt &&
 	wait
 	echo ""
 	echo "The IP addresses printed to the terminal above are not the final network.txt file. Please confirm by opening the network.txt file below or by navigating to the /root/Desktop/ISA/network directory..."
@@ -985,7 +989,7 @@ else
 		echo ""
 		echo "The network.txt file will open shortly. Make the necessary changes to the network.txt file and then save it."
 		sleep 3
-		mousepad /root/Desktop/ISA/network/network.txt &
+		mousepad /root/Desktop/ISA/Scans/Network/network.txt &
 		mousepad_pid=$!
 		while true; do
 			if ! ps -p $mousepad_pid > /dev/null; then
@@ -1028,16 +1032,16 @@ fi
 #Creates the nmap.xml file and then opens it in zenmap. Checks to see if a nmap.xml is already present and if so, creates a .bak file
 if [ $SKIP_NMAP == 'y' ]; then
 	echo "Skipping nmap. If a previous nmap file exists in /root/Desktop/ISAold/nmap/ exists, it will be copied over and will be used for the remainder of this script."
-	zenmap -f /root/Desktop/ISA/nmap/nmap.xml & disown
+	zenmap -f /root/Desktop/ISA/Scans/Nmap/nmap.xml & disown
 else
 	echo "Running nmap on the network.txt file. Zenmap will open once complete..."
-	if [ -f "/root/Desktop/ISA/nmap/nmap.xml" ]; then
-		mv /root/Desktop/ISA/nmap/nmap.xml /root/Desktop/ISA/nmap/nmap.bak
+	if [ -f "/root/Desktop/ISA/Scans/Nmap/nmap.xml" ]; then
+		mv /root/Desktop/ISA/Scans/Nmap/nmap.xml /root/Desktop/ISA/Scans/Nmap/nmap.bak
 	fi
 	wait
-	nmap -sV -T4 -O -v -F -iL /root/Desktop/ISA/network/network.txt -Pn --randomize-hosts --version-light " --exclude-ports 9100" -oX /root/Desktop/ISA/nmap/nmap.xml &&
+	nmap -sV -T4 -O -v -F -iL /root/Desktop/ISA/Scans/Network/network.txt -Pn --randomize-hosts --version-light " --exclude-ports 9100" -oX /root/Desktop/ISA/Scans/Nmap/nmap.xml &&
 	wait
-	zenmap -f /root/Desktop/ISA/nmap/nmap.xml & disown
+	zenmap -f /root/Desktop/ISA/Scans/Nmap/nmap.xml & disown
 	wait
 	sleep 5
 fi
@@ -1069,12 +1073,12 @@ fi
 echo "Trying zone transfer. Will not bruteforce..."
 echo ""
 ldap=false
-if /root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service ldap; then
+if /root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service ldap; then
 	ldap=true
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service ldap | sed 's/0\.$//' > /root/Desktop/ISA/anonymousenum/DC_IPs.txt
-        cudomain=$(grep 'Domain:' /root/Desktop/ISA/nmap/nmap.xml | sed -n 's/.*Domain: \([^,]*\).*/\1/p' | sed 's/0\.$//' | sort | uniq)
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service ldap | sed 's/0\.$//' > /root/Desktop/ISA/Scans/Vulnerability/DC_IPs.txt
+        cudomain=$(grep 'Domain:' /root/Desktop/ISA/Scans/Nmap/nmap.xml | sed -n 's/.*Domain: \([^,]*\).*/\1/p' | sed 's/0\.$//' | sort | uniq)
         wait
-        script -q /root/Desktop/ISA/zonetransfer/zonetransfer.txt -c "dnsenum -t 10 --nocolor --file nobruteforce.txt $cudomain"
+        script -q /root/Desktop/ISA/Screenshots/DNS Zone Transfer/zonetransfer.txt -c "dnsenum -t 10 --nocolor --file nobruteforce.txt $cudomain"
         wait
 else
 	echo "LDAP service not discovered. Anonymous enumeration and RDP to DC will also be skipped..."
@@ -1106,10 +1110,10 @@ if [ "$ldap" == true ]; then
 		echo "Running Anonymous Enumeration on $IP"
 		nmap -Pn -T4 -sS -p139,445 --script=smb-enum-users "$IP"
 		bash -c "echo 'enumdomusers' | rpcclient $IP -U%"
-		bash -c "echo 'enumdomusers' | rpcclient $IP -U%" | cut -d[ -f2 | cut -d] -f1 > "/root/Desktop/ISA/anonymousenum/$IP-users.txt"
+		bash -c "echo 'enumdomusers' | rpcclient $IP -U%" | cut -d[ -f2 | cut -d] -f1 > "/root/Desktop/ISA/Scans/Vulnerability/$IP-users.txt"
 		echo "Completed for IP: $IP"
 		echo "-----------------------------------"
-	done < /root/Desktop/ISA/anonymousenum/DC_IPs.txt
+	done < /root/Desktop/ISA/Scans/Vulnerability/DC_IPs.txt
 fi
 
 # Save checkpoint after anon enum
@@ -1132,25 +1136,25 @@ echo "Running metasploit for anonymous FTP, bluekeep, eternal blue, and cipher z
 service postgresql start
 wait
 echo "Running MetaSploit to test for anonymous ftp, bluekeep, eternal blue, and cipher zero..."
-echo '---Anonymous FTP---' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-msfconsole -q -x 'use auxiliary/scanner/ftp/anonymous; set RHOSTS "file:///root/Desktop/ISA/network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
+echo '---Anonymous FTP---' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+msfconsole -q -x 'use auxiliary/scanner/ftp/anonymous; set RHOSTS "file:///root/Desktop/ISA/Scans/Network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
 
-echo '---BlueKeep---' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-msfconsole -q -x 'use auxiliary/scanner/rdp/cve_2019_0708_bluekeep; set RHOSTS "file:///root/Desktop/ISA/network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '---Eternal Blue---' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-msfconsole -q -x 'use auxiliary/scanner/smb/smb_ms17_010; set RHOSTS "file:///root/Desktop/ISA/network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '---Cipher Zero---' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-msfconsole -q -x 'use auxiliary/scanner/ipmi/ipmi_cipher_zero; set RHOSTS "file:///root/Desktop/ISA/network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '' | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-echo '---Successful---' |  tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
-grep '[+]' /root/Desktop/ISA/armitage/metasploit_logs.txt | tee -a /root/Desktop/ISA/armitage/metasploit_logs.txt
+echo '---BlueKeep---' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+msfconsole -q -x 'use auxiliary/scanner/rdp/cve_2019_0708_bluekeep; set RHOSTS "file:///root/Desktop/ISA/Scans/Network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '---Eternal Blue---' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+msfconsole -q -x 'use auxiliary/scanner/smb/smb_ms17_010; set RHOSTS "file:///root/Desktop/ISA/Scans/Network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '---Cipher Zero---' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+msfconsole -q -x 'use auxiliary/scanner/ipmi/ipmi_cipher_zero; set RHOSTS "file:///root/Desktop/ISA/Scans/Network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+echo '---Successful---' |  tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
+grep '[+]' /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt | tee -a /root/Desktop/ISA/Scans/Armitage/metasploit_logs.txt
 echo ""
 
 # Save checkpoint after metasploit
@@ -1169,17 +1173,17 @@ if ! should_skip_section "SHARES_SNMP" "$RESUME_FROM"; then
     echo ""
 
 #Shares and SNMP
-echo '---SMB Enumeration---' | tee -a /root/Desktop/ISA/shares/shares.txt
-msfconsole -q -x 'use auxiliary/scanner/smb/smb_enumshares; set RHOSTS "file:///root/Desktop/ISA/network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/shares/shares.txt
-echo '' | tee -a /root/Desktop/ISA/shares/shares.txt
-echo '---Successful---' |  tee -a /root/Desktop/ISA/shares/shares.txt
-grep '[+]' /root/Desktop/ISA/shares/shares.txt | tee -a /root/Desktop/ISA/shares/shares.txt
+echo '---SMB Enumeration---' | tee -a /root/Desktop/ISA/Scans/ShareScan/shares.txt
+msfconsole -q -x 'use auxiliary/scanner/smb/smb_enumshares; set RHOSTS "file:///root/Desktop/ISA/Scans/Network/network.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Scans/ShareScan/shares.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/ShareScan/shares.txt
+echo '---Successful---' |  tee -a /root/Desktop/ISA/Scans/ShareScan/shares.txt
+grep '[+]' /root/Desktop/ISA/Scans/ShareScan/shares.txt | tee -a /root/Desktop/ISA/Scans/ShareScan/shares.txt
 echo ""
-echo '---SNMP Enumeration Public---' | tee -a /root/Desktop/ISA/snmp/snmp.txt
-msfconsole -q -x 'use auxiliary/scanner/snmp/snmp_enum; set RHOSTS "file:///root/Desktop/ISA/network/network.txt"; set COMMUNITY public; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/snmp/snmp.txt
-echo '' | tee -a /root/Desktop/ISA/snmp/snmp.txt
-echo '---SNMP Enumeration Private---' | tee -a /root/Desktop/ISA/snmp/snmp.txt
-msfconsole -q -x 'use auxiliary/scanner/snmp/snmp_enum; set RHOSTS "file:///root/Desktop/ISA/network/network.txt"; set COMMUNITY private; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/snmp/snmp.txt
+echo '---SNMP Enumeration Public---' | tee -a /root/Desktop/ISA/Scans/SNMP/snmp.txt
+msfconsole -q -x 'use auxiliary/scanner/snmp/snmp_enum; set RHOSTS "file:///root/Desktop/ISA/Scans/Network/network.txt"; set COMMUNITY public; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Scans/SNMP/snmp.txt
+echo '' | tee -a /root/Desktop/ISA/Scans/SNMP/snmp.txt
+echo '---SNMP Enumeration Private---' | tee -a /root/Desktop/ISA/Scans/SNMP/snmp.txt
+msfconsole -q -x 'use auxiliary/scanner/snmp/snmp_enum; set RHOSTS "file:///root/Desktop/ISA/Scans/Network/network.txt"; set COMMUNITY private; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Scans/SNMP/snmp.txt
 wait
 echo ""
 
@@ -1201,7 +1205,7 @@ if ! should_skip_section "OS_VERSIONS" "$RESUME_FROM"; then
 #OS Versions check.
 echo "Checking the OS versions using the network.txt file..."
 wait
-nxc smb /root/Desktop/ISA/network/network.txt | tee -a /root/Desktop/ISA/versions/versions.txt
+nxc smb /root/Desktop/ISA/Scans/Network/network.txt | tee -a /root/Desktop/ISA/Scans/Versions/versions.txt
 wait
 echo ""
 echo ""
@@ -1223,14 +1227,14 @@ if ! should_skip_section "SQL" "$RESUME_FROM"; then
 
 #SQLPing using metasploit
 echo "Running SQL IPs with MetaSploit..."
-/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service ms-sql-s | sed 's/:.*//' > /root/Desktop/ISA/sql/SQL_IPs.txt
+/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service ms-sql-s | sed 's/:.*//' > /root/Desktop/ISA/Scans/SQLping/SQL_IPs.txt
 wait
-if [ -s /root/Desktop/ISA/sql/SQL_IPs.txt ]; then
-	echo '---SQLPing---' | tee -a /root/Desktop/ISA/sql/sqlping_logs.txt
-	msfconsole -q -x 'use auxiliary/scanner/mssql/mssql_ping; set RHOSTS "file:///root/Desktop/ISA/sql/SQL_IPs.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/sql/sqlping_logs.txt
-	echo '' | tee -a /root/Desktop/ISA/sql/sqlping_logs.txt
-	echo '---Possibly Successful---' |  tee -a /root/Desktop/ISA/sql/sqlping_logs.txt
-	grep '[+]' /root/Desktop/ISA/sql/sqlping_logs.txt | tee -a /root/Desktop/ISA/sql/sqlping_logs.txt
+if [ -s /root/Desktop/ISA/Scans/SQLping/SQL_IPs.txt ]; then
+	echo '---SQLPing---' | tee -a /root/Desktop/ISA/Scans/SQLping/sqlping_logs.txt
+	msfconsole -q -x 'use auxiliary/scanner/mssql/mssql_ping; set RHOSTS "file:///root/Desktop/ISA/Scans/SQLping/SQL_IPs.txt"; set THREADS 24; run; exit' 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Scans/SQLping/sqlping_logs.txt
+	echo '' | tee -a /root/Desktop/ISA/Scans/SQLping/sqlping_logs.txt
+	echo '---Possibly Successful---' |  tee -a /root/Desktop/ISA/Scans/SQLping/sqlping_logs.txt
+	grep '[+]' /root/Desktop/ISA/Scans/SQLping/sqlping_logs.txt | tee -a /root/Desktop/ISA/Scans/SQLping/sqlping_logs.txt
 	wait
 else
 	echo "Ms-sql-s service not discovered..."
@@ -1256,18 +1260,18 @@ if ! should_skip_section "TELNET" "$RESUME_FROM"; then
 
 #Telnets
 echo "Testing Telnet connections with MetaSploit..."
-/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service telnet > /root/Desktop/ISA/telnets/telnet_IPs.txt
+/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service telnet > /root/Desktop/ISA/Screenshots/telnet/telnet_IPs.txt
 wait
-if [ -s /root/Desktop/ISA/telnets/telnet_IPs.txt ]; then
-	echo '---Telnets---' | tee -a /root/Desktop/ISA/telnets/telnet_logs.txt
+if [ -s /root/Desktop/ISA/Screenshots/telnet/telnet_IPs.txt ]; then
+	echo '---Telnets---' | tee -a /root/Desktop/ISA/Screenshots/telnet/telnet_logs.txt
 	while IFS=: read -r ip port; do
 		if [[ -n "$ip" && -n "$port" ]]; then
-			msfconsole -q -x "use auxiliary/scanner/telnet/telnet_version; set RHOSTS $ip; set RPORT $port; set THREADS 24; run; exit" 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/telnets/telnet_logs.txt
+			msfconsole -q -x "use auxiliary/scanner/telnet/telnet_version; set RHOSTS $ip; set RPORT $port; set THREADS 24; run; exit" 2>&1 | sed -e 's/\x1b\[[0-9;]*m//g' | tee -a /root/Desktop/ISA/Screenshots/telnet/telnet_logs.txt
 		fi
-	done < /root/Desktop/ISA/telnets/telnet_IPs.txt
-	echo '' | tee -a /root/Desktop/ISA/telnets/telnet_logs.txt
-	echo '---Successful---' |  tee -a /root/Desktop/ISA/telnets/telnet_logs.txt
-	grep '[+]' /root/Desktop/ISA/telnets/telnet_logs.txt | tee -a /root/Desktop/ISA/telnets/telnet_logs.txt
+	done < /root/Desktop/ISA/Screenshots/telnet/telnet_IPs.txt
+	echo '' | tee -a /root/Desktop/ISA/Screenshots/telnet/telnet_logs.txt
+	echo '---Successful---' |  tee -a /root/Desktop/ISA/Screenshots/telnet/telnet_logs.txt
+	grep '[+]' /root/Desktop/ISA/Screenshots/telnet/telnet_logs.txt | tee -a /root/Desktop/ISA/Screenshots/telnet/telnet_logs.txt
 	wait
 else
 	echo "Telnet service not discovered..."
@@ -1293,15 +1297,15 @@ if ! should_skip_section "SMTP" "$RESUME_FROM"; then
 
 #Anonymous SMTP Relay
 echo "Checking for active SMTP service..."
-/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service smtp | sed 's/:.*//' | sort | uniq > /root/Desktop/ISA/smtprelay/SMTP_IPs.txt
-if [ -s /root/Desktop/ISA/smtprelay/SMTP_IPs.txt ]; then
+/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service smtp | sed 's/:.*//' | sort | uniq > /root/Desktop/ISA/Screenshots/SMTP Relay/SMTP_IPs.txt
+if [ -s /root/Desktop/ISA/Screenshots/SMTP Relay/SMTP_IPs.txt ]; then
 	echo "Anonymous SMTP Relay will be tested on these IP addresses:"
-	cat /root/Desktop/ISA/smtprelay/SMTP_IPs.txt
+	cat /root/Desktop/ISA/Screenshots/SMTP Relay/SMTP_IPs.txt
 	while read smtp; do
-		swaks -f $cuemail -t $cgemail -s $smtp --body "Hello Please Contact CastleGarde - SMTP Exploit" | tee -a /root/Desktop/ISA/smtprelay/smtprelay.txt
+		swaks -f $cuemail -t $cgemail -s $smtp --body "Hello Please Contact CastleGarde - SMTP Exploit" | tee -a /root/Desktop/ISA/Screenshots/SMTP Relay/smtprelay.txt
 		echo ""
 		wait
-	done < /root/Desktop/ISA/smtprelay/SMTP_IPs.txt
+	done < /root/Desktop/ISA/Screenshots/SMTP Relay/SMTP_IPs.txt
 else
 	echo "SMTP Service not discovered. No further SMTP testing required."
 fi
@@ -1362,7 +1366,7 @@ else
 fi
 
 ### RDP Test ###
-TEMP_DIR="/root/Desktop/ISA/outbound/rdp_screenshots"
+TEMP_DIR="/root/Desktop/ISA/Screenshots/Outbound Connections/rdp_screenshots"
 mkdir -p "$TEMP_DIR"
 
 # Get the screen resolution (for full screen)
@@ -1395,7 +1399,7 @@ sleep 5
 
 ### RDP to DC ###
 if [ "$ldap" == true ]; then
-	IP_FILE="/root/Desktop/ISA/anonymousenum/DC_IPs.txt"
+	IP_FILE="/root/Desktop/ISA/Scans/Vulnerability/DC_IPs.txt"
 	TEMP_DIR1="/root/Desktop/ISA/DC_RDP"
 	mkdir -p "$TEMP_DIR1"
 	while read -r LINE; do
@@ -1436,42 +1440,42 @@ if ! should_skip_section "WEBFILTER" "$RESUME_FROM"; then
 
 #Web Filtering.
 echo "Running unauthenticated web filtering tests using these URLs with Gowitness:"
-echo "http://www.hidester.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.hidemyass.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.soldierx.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.2600.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.exploit-db.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.thepiratebay.org" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.passthepopcorn.me" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.facebook.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.instagram.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.playboy.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.dropbox.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.pastebin.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.chatroulette.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.hangouts.google.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.hotmail.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.gmail.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "http://www.protonmail.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.hidester.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.hidemyass.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.soldierx.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.2600.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.exploit-db.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.thepiratebay.org" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.passthepopcorn.me" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.facebook.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.instagram.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.playboy.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.dropbox.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.pastebin.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.chatroulette.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.hangouts.google.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.hotmail.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.gmail.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
-echo "https://www.protonmail.com" | tee -a /root/Desktop/ISA/webfiltering/websites.txt
+echo "http://www.hidester.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.hidemyass.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.soldierx.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.2600.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.exploit-db.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.thepiratebay.org" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.passthepopcorn.me" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.facebook.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.instagram.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.playboy.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.dropbox.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.pastebin.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.chatroulette.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.hangouts.google.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.hotmail.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.gmail.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "http://www.protonmail.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.hidester.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.hidemyass.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.soldierx.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.2600.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.exploit-db.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.thepiratebay.org" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.passthepopcorn.me" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.facebook.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.instagram.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.playboy.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.dropbox.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.pastebin.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.chatroulette.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.hangouts.google.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.hotmail.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.gmail.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
+echo "https://www.protonmail.com" | tee -a /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt
 wait
-gowitness scan file -f /root/Desktop/ISA/webfiltering/websites.txt --screenshot-path /root/Desktop/ISA/webfiltering/webfiltering --delay 50 --timeout 70
+gowitness scan file -f /root/Desktop/ISA/Screenshots/WebFiltering/websites.txt --screenshot-path /root/Desktop/ISA/Screenshots/WebFiltering/webfiltering --delay 50 --timeout 70
 echo "Double check screenshots..."
 wait
 echo ""
@@ -1504,7 +1508,7 @@ echo "Running Gowitness for manual checking of default passwords and defaulthttp
 echo ""
 cd /root/Desktop/ISA/gowitness
 wait
-gowitness scan nmap -f /root/Desktop/ISA/nmap/nmap.xml --open-only --service-contains http --write-db --screenshot-path /root/Desktop/ISA/gowitness/screenshots
+gowitness scan nmap -f /root/Desktop/ISA/Scans/Nmap/nmap.xml --open-only --service-contains http --write-db --screenshot-path /root/Desktop/ISA/Screenshots/Default Passwords/screenshots
 wait
 cd /root
 echo ""
@@ -1557,14 +1561,14 @@ if $all_checks_passed; then
 fi
 
 echo "Running defaulthttploginhunter on these IPs and ports: "
-/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service http > /root/Desktop/ISA/gowitness/parsed_xml.txt | cat
+/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service http > /root/Desktop/ISA/Screenshots/Default Passwords/parsed_xml.txt | cat
 wait
 echo ""
-/root/tools/default-http-login-hunter/default-http-login-hunter.sh /root/Desktop/ISA/gowitness/parsed_xml.txt | tee -a /root/Desktop/ISA/gowitness/defaulthttp.txt
+/root/tools/default-http-login-hunter/default-http-login-hunter.sh /root/Desktop/ISA/Screenshots/Default Passwords/parsed_xml.txt | tee -a /root/Desktop/ISA/Screenshots/Default Passwords/defaulthttp.txt
 wait
-echo "" | tee -a /root/Desktop/ISA/gowitness/defaulthttp.txt
-echo "---Successful Logins---" | tee -a /root/Desktop/ISA/gowitness/defaulthttp.txt
-grep -B 2 -P '_    (?!\(no)' /root/Desktop/ISA/gowitness/defaulthttp.txt | tee -a /root/Desktop/ISA/gowitness/defaulthttp.txt
+echo "" | tee -a /root/Desktop/ISA/Screenshots/Default Passwords/defaulthttp.txt
+echo "---Successful Logins---" | tee -a /root/Desktop/ISA/Screenshots/Default Passwords/defaulthttp.txt
+grep -B 2 -P '_    (?!\(no)' /root/Desktop/ISA/Screenshots/Default Passwords/defaulthttp.txt | tee -a /root/Desktop/ISA/Screenshots/Default Passwords/defaulthttp.txt
 wait
 echo ""
 
@@ -1607,7 +1611,7 @@ if ! should_skip_section "GOWITNESS_SERVER" "$RESUME_FROM"; then
 #Starts the Gowitness server
 echo "Starting the Gowitness server..."
 sleep 2
-gnome-terminal --geometry=200x45 -- bash -c 'gowitness report server --db-uri "sqlite:///root/Desktop/ISA/gowitness/gowitness.sqlite3" --screenshot-path /root/Desktop/ISA/gowitness/screenshots/; echo''; bash' & disown
+gnome-terminal --geometry=200x45 -- bash -c 'gowitness report server --db-uri "sqlite:///root/Desktop/ISA/Screenshots/Default Passwords/gowitness.sqlite3" --screenshot-path /root/Desktop/ISA/Screenshots/Default Passwords/screenshots/; echo''; bash' & disown
 wait
 firefox 127.0.0.1:7171 & disown
 
@@ -1627,8 +1631,8 @@ if ! should_skip_section "NETAUDIT_PREP" "$RESUME_FROM"; then
     echo ""
 
 #Removes printer IP addresses and then condenses down to 300 to autostart netaudit.
-/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service printer | sed 's/:.*//' > /root/Desktop/ISA/duplicateprinter_IPs.txt
-cat /root/Desktop/ISA/network/network.txt | tee -a /root/Desktop/ISA/duplicateprinter_IPs.txt
+/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service printer | sed 's/:.*//' > /root/Desktop/ISA/duplicateprinter_IPs.txt
+cat /root/Desktop/ISA/Scans/Network/network.txt | tee -a /root/Desktop/ISA/duplicateprinter_IPs.txt
 sort /root/Desktop/ISA/duplicateprinter_IPs.txt | uniq > /root/Desktop/ISA/printers_removed_for_netaudit.txt
 echo ""
 echo "Condensing IP list down to 300 IPs..."
@@ -1637,14 +1641,14 @@ output_file1="/root/Desktop/ISA/netauditIPsdraft.txt"
 ip_count=$(wc -l < "$input_file1")
 if [ "$ip_count" -gt 300 ]; then
 	shuf "$input_file1" | head -n 300 > "$output_file1"
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service ldap | tee -a $output_file1
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service ms-sql-s | tee -a $output_file1
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service mysql | tee -a $output_file1
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service smtp | tee -a $output_file1
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service upnp | tee -a $output_file1
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service postgresql | tee -a $output_file1
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service IIS | tee -a $output_file1
-	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/nmap/nmap.xml service NFD-or-IIS | tee -a $output_file1
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service ldap | tee -a $output_file1
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service ms-sql-s | tee -a $output_file1
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service mysql | tee -a $output_file1
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service smtp | tee -a $output_file1
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service upnp | tee -a $output_file1
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service postgresql | tee -a $output_file1
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service IIS | tee -a $output_file1
+	/root/tools/nmap-parse-output/nmap-parse-output /root/Desktop/ISA/Scans/Nmap/nmap.xml service NFD-or-IIS | tee -a $output_file1
 	wait
 	sort $output_file1 | uniq > /root/Desktop/ISA/naIPs.txt
 	sed 's/:[0-9]\+$//' /root/Desktop/ISA/naIPs.txt | sort | uniq > /root/Desktop/ISA/naIPsFinal.txt
@@ -1699,7 +1703,7 @@ case "${dhcp_answer,,}" in
     n)
         echo "You are on static IP. Script will finish without running netaudit automatically."
         echo 'If you need to start the GoWitness server again, use this command:'
-        echo 'gowitness report server --db-uri "sqlite:///root/Desktop/ISA/gowitness/gowitness.sqlite3" --screenshot-path /root/Desktop/ISA/gowitness/screenshots/'
+        echo 'gowitness report server --db-uri "sqlite:///root/Desktop/ISA/Screenshots/Default Passwords/gowitness.sqlite3" --screenshot-path /root/Desktop/ISA/Screenshots/Default Passwords/screenshots/'
         echo "Then open firefox and browse to 127.0.0.1:7171"
 	if [ "$filecopy" == "y" ]; then
 		echo 'Copying ISA files to host...'
@@ -1738,7 +1742,7 @@ echo ""
 echo "NetAudit should have started. Firefox is opening to check..."
 echo ""
 firefox http://$ip_addressna:5000 & disown
-echo 'If you need to start the GoWitness server again, use this command:   gowitness report server --db-uri "sqlite:///root/Desktop/ISA/gowitness/gowitness.sqlite3" --screenshot-path /root/Desktop/ISA/gowitness/screenshots/'
+echo 'If you need to start the GoWitness server again, use this command:   gowitness report server --db-uri "sqlite:///root/Desktop/ISA/Screenshots/Default Passwords/gowitness.sqlite3" --screenshot-path /root/Desktop/ISA/Screenshots/Default Passwords/screenshots/'
 echo "Then open firefox and browse to  127.0.0.1:7171"
 echo ""
 
