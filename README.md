@@ -52,6 +52,7 @@ This script automates the process of conducting information security assessments
 - puppeteer (Node.js)
 - figlet
 - mousepad
+- tshark / wireshark (for packet capture)
 
 ### Optional
 - NetAudit server (for full functionality)
@@ -117,33 +118,41 @@ The `isa-automation-resume.sh` script includes checkpoint functionality that all
 
 **Available Checkpoints:**
 1. Initial Setup and User Inputs
-2. Network Discovery (Ping Sweeps)
-3. Nmap Vulnerability Scanning
-4. DNS Zone Transfer
-5. Anonymous Enumeration
-6. Metasploit Vulnerability Tests
-7. SMB Shares and SNMP Enumeration
-8. OS Version Detection
-9. SQL Server Testing
-10. Telnet Service Testing
-11. SMTP Relay Testing
-12. Outbound Connection Testing
-13. Web Filtering Tests
-14. Gowitness Web Screenshots
-15. Default HTTP Credentials
-16. ISP Information Gathering
-17. Gowitness Server Startup
-18. NetAudit Preparation
-19. NetAudit Execution
+2. Network Packet Capture (Tshark)
+3. Network Discovery (Ping Sweeps)
+4. Nmap Vulnerability Scanning
+5. DNS Zone Transfer
+6. Anonymous Enumeration
+7. Metasploit Vulnerability Tests
+8. SMB Shares and SNMP Enumeration
+9. OS Version Detection
+10. SQL Server Testing
+11. Telnet Service Testing
+12. SMTP Relay Testing
+13. Outbound Connection Testing
+14. Web Filtering Tests
+15. Gowitness Web Screenshots
+16. Default HTTP Credentials
+17. ISP Information Gathering
+18. Gowitness Server Startup
+19. NetAudit Preparation
+20. NetAudit Execution
 
 **Checkpoint Files:**
 - State: `/root/Desktop/ISA/.checkpoint_state`
 - Config: `/root/Desktop/ISA/.resume_config`
 
 **Resume Menu Options:**
-- Select 1-19 to resume from that checkpoint
+- Select 1-20 to resume from that checkpoint
 - Select 0 to start fresh (deletes all checkpoints)
 - Select q to quit
+
+**Packet Capture:**
+- Automatically captures 10,000 network packets using tshark
+- Saves to `/root/Desktop/ISA/wireshark/capture_TIMESTAMP.pcap`
+- Useful for post-assessment traffic analysis
+- Can be opened with Wireshark for detailed inspection
+- Captures on detected network interface (typically eth0)
 
 ## Configuration
 
@@ -174,7 +183,8 @@ ISA/
 ├── outbound/        # Outbound connection tests
 ├── snmp/            # SNMP enumeration results
 ├── shares/          # SMB share enumeration
-└── DC_RDP/          # Domain controller RDP tests
+├── DC_RDP/          # Domain controller RDP tests
+└── wireshark/       # Network packet captures (.pcap files)
 ```
 
 ## Security Considerations
