@@ -32,10 +32,10 @@ if [ -d "/root/Desktop/ISA" ]; then
 	mv /root/Desktop/ISA /root/Desktop/ISAold
 	echo "Moved the ISA directory into the ISAold directory..."
 	wait
-	mkdir -p /root/Desktop/ISA/{network,nmap,zonetransfer,anonymousenum,armitage,versions,sql,telnets,smtprelay,webfiltering,gowitness,isp,netaudit,outbound,snmp,shares,DC_RDP}
+	mkdir -p /root/Desktop/ISA/{network,nmap,zonetransfer,anonymousenum,armitage,versions,sql,telnets,smtprelay,webfiltering,gowitness,isp,netaudit,outbound,snmp,shares,DC_RDP,wireshark}
 	echo "Created a new ISA directory on the desktop..."
 else
-	mkdir -p /root/Desktop/ISA/{network,nmap,zonetransfer,anonymousenum,armitage,versions,sql,telnets,smtprelay,webfiltering,gowitness,isp,netaudit,outbound,snmp,shares,DC_RDP}
+	mkdir -p /root/Desktop/ISA/{network,nmap,zonetransfer,anonymousenum,armitage,versions,sql,telnets,smtprelay,webfiltering,gowitness,isp,netaudit,outbound,snmp,shares,DC_RDP,wireshark}
 	echo "Created the ISA directory on the desktop..."
 fi
 
@@ -202,6 +202,7 @@ CONFIG_FILE="/root/Desktop/ISA/.resume_config"
 # Define all checkpoints in order
 declare -a CHECKPOINTS=(
     "INIT:Initial Setup and User Inputs"
+    "PACKET_CAPTURE:Network Packet Capture (Tshark)"
     "PING_SWEEPS:Network Discovery (Ping Sweeps)"
     "NMAP:Nmap Vulnerability Scanning"
     "ZONE_TRANSFER:DNS Zone Transfer"
@@ -638,6 +639,78 @@ save_checkpoint "INIT"
 else
     echo "[SKIP] Skipping Initial Setup (already completed)"
     echo "[INFO] Loading previous configuration..."
+fi
+
+# ============= CHECKPOINT: PACKET_CAPTURE =============
+if ! should_skip_section "PACKET_CAPTURE" "$RESUME_FROM"; then
+    echo ""
+    echo "=========================================="
+    echo "=== Starting: Network Packet Capture (Tshark) ==="
+    echo "=========================================="
+    echo ""
+
+    # Check if tshark is installed
+    if ! command -v tshark &> /dev/null; then
+        echo "[WARNING] tshark is not installed. Skipping packet capture."
+        echo "[INFO] Install with: apt-get install tshark"
+    else
+        # Get the network interface
+        interface="eth0"
+
+        # Check if interface exists
+        if ! ip link show "$interface" &> /dev/null; then
+            echo "[WARNING] Interface $interface not found. Attempting to detect active interface..."
+            interface=$(ip route | grep default | awk '{print $5}' | head -n 1)
+            if [ -z "$interface" ]; then
+                echo "[ERROR] Could not detect active network interface. Skipping packet capture."
+                interface=""
+            else
+                echo "[INFO] Using detected interface: $interface"
+            fi
+        fi
+
+        if [ -n "$interface" ]; then
+            # Generate filename with timestamp
+            timestamp=$(date +%Y%m%d_%H%M%S)
+            pcap_file="/root/Desktop/ISA/wireshark/capture_${timestamp}.pcap"
+
+            echo "[INFO] Starting packet capture on interface: $interface"
+            echo "[INFO] Capturing 10,000 packets..."
+            echo "[INFO] Output file: $pcap_file"
+            echo "[INFO] This may take a few minutes depending on network activity..."
+            echo ""
+
+            # Capture 10,000 packets with tshark
+            # -i: interface
+            # -c: packet count
+            # -w: output file
+            # -q: quiet mode (less verbose)
+            tshark -i "$interface" -c 10000 -w "$pcap_file" -q 2>&1 | tee -a /root/Desktop/ISA/wireshark/capture.log
+
+            if [ -f "$pcap_file" ]; then
+                # Get file size in human-readable format
+                file_size=$(du -h "$pcap_file" | cut -f1)
+                packet_count=$(tshark -r "$pcap_file" -q -z io,stat,0 2>&1 | grep "Frames" | awk '{print $4}' | head -n1)
+
+                echo ""
+                echo "[SUCCESS] Packet capture completed!"
+                echo "[INFO] File: $pcap_file"
+                echo "[INFO] Size: $file_size"
+                echo "[INFO] Packets captured: ${packet_count:-10000}"
+                echo "[INFO] You can analyze this with: wireshark $pcap_file"
+                echo ""
+            else
+                echo "[ERROR] Packet capture failed. File not created."
+                echo "[INFO] Check permissions and network interface status."
+            fi
+        fi
+    fi
+
+    # Save checkpoint after packet capture
+    save_checkpoint "PACKET_CAPTURE"
+
+else
+    echo "[SKIP] Skipping Packet Capture (already completed)"
 fi
 
 # ============= CHECKPOINT: PING_SWEEPS =============
