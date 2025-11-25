@@ -355,6 +355,47 @@ should_skip_section() {
     fi
 }
 
+# Function to extract subnets from old network.txt file
+extract_subnets_from_old_network() {
+    local old_network_file="$1"
+    local output_file="/root/Desktop/ISA/network/ips.txt"
+
+    echo "[INFO] Processing old network.txt file..."
+    echo "[INFO] Extracting unique /16 subnets..."
+
+    # Read IPs and extract unique /16 subnets (first two octets)
+    declare -A subnets
+    while IFS= read -r ip; do
+        # Skip empty lines and comments
+        [[ -z "$ip" || "$ip" =~ ^#.*$ ]] && continue
+
+        # Validate IP format
+        if [[ $ip =~ ^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$ ]]; then
+            local octet1="${BASH_REMATCH[1]}"
+            local octet2="${BASH_REMATCH[2]}"
+
+            # Check if it's a private IP
+            if [[ ($octet1 -eq 10) ||
+                  ($octet1 -eq 172 && $octet2 -ge 16 && $octet2 -le 31) ||
+                  ($octet1 -eq 192 && $octet2 -eq 168) ]]; then
+                # Store unique /16 subnet
+                subnets["${octet1}.${octet2}"]=1
+            fi
+        fi
+    done < "$old_network_file"
+
+    # Convert subnets to ranges and write to file
+    local count=0
+    for subnet in "${!subnets[@]}"; do
+        echo "${subnet}.0.1 ${subnet}.255.255" >> "$output_file"
+        echo "  -> Added subnet: ${subnet}.0.0/16"
+        ((count++))
+    done
+
+    echo "[INFO] Added $count subnet ranges from old network file"
+    echo ""
+}
+
 # Check for resume capability at script start
 RESUME_FROM=""
 LAST_CHECKPOINT=$(load_last_checkpoint)
@@ -700,6 +741,76 @@ else
 	fi
 	echo ""
 
+	#Import old network.txt file to automatically determine subnets
+	echo "======================================================================="
+	echo "           IMPORT OLD NETWORK.TXT FILE (OPTIONAL)"
+	echo "======================================================================="
+	echo ""
+	echo "If you have a previous network.txt file from a prior assessment,"
+	echo "you can import it to automatically determine which subnets to scan."
+	echo "This will extract all unique /16 subnets from your old scan results."
+	echo ""
+
+	while true; do
+		read -p "Do you have an old network.txt file to import? (y/n): " import_old_network
+		import_old_network=$(echo "$import_old_network" | tr '[:upper:]' '[:lower:]')
+		if [[ "$import_old_network" == "y" || "$import_old_network" == "n" ]]; then
+			break
+		else
+			echo "Invalid input. Please enter 'y' or 'n'."
+		fi
+	done
+
+	if [ "$import_old_network" == "y" ]; then
+		while true; do
+			read -p "Enter the full path to your old network.txt file: " old_network_path
+
+			# Check if file exists
+			if [ ! -f "$old_network_path" ]; then
+				echo "[ERROR] File not found: $old_network_path"
+				read -p "Try again? (y/n): " retry
+				if [[ "$retry" != "y" ]]; then
+					echo "Skipping old network import."
+					break
+				fi
+				continue
+			fi
+
+			# Check if file is readable
+			if [ ! -r "$old_network_path" ]; then
+				echo "[ERROR] File is not readable: $old_network_path"
+				read -p "Try again? (y/n): " retry
+				if [[ "$retry" != "y" ]]; then
+					echo "Skipping old network import."
+					break
+				fi
+				continue
+			fi
+
+			# Show file preview
+			echo ""
+			echo "Preview of file (first 10 lines):"
+			echo "-----------------------------------"
+			head -n 10 "$old_network_path"
+			echo "-----------------------------------"
+			echo ""
+
+			read -p "Is this the correct file? (y/n): " confirm_file
+			if [[ "$confirm_file" == "y" ]]; then
+				extract_subnets_from_old_network "$old_network_path"
+				echo "[SUCCESS] Subnets extracted and added to scan list!"
+				break
+			else
+				read -p "Try again? (y/n): " retry
+				if [[ "$retry" != "y" ]]; then
+					echo "Skipping old network import."
+					break
+				fi
+			fi
+		done
+	fi
+	echo ""
+
 	#Angry IP scanner. Accepts user input ranges. Verifies that the range contains only private IP addresses. Limits the amount of IP addresses in the range 65536
 	echo "These ranges will automatically be scanned regardless of user input:"
 	echo "----10.0.0.1 - 10.0.255.255----"
@@ -710,7 +821,7 @@ else
 	echo "--172.31.0.1 - 172.31.255.255--"
 	echo "-192.168.0.1 - 192.168.255.255-"
 	while true; do
-		read -p "Would you like to scan another subnet? y/n: " confirm4
+		read -p "Would you like to scan additional subnets manually? y/n: " confirm4
 		confirm4=$(echo "$confirm4" | tr '[:upper:]' '[:lower:]')
 		if [[ "$confirm4" == "y" || "$confirm4" == "n" ]]; then
 			echo ""

@@ -108,6 +108,13 @@ The `isa-automation-resume.sh` script includes checkpoint functionality that all
 - You'll see a menu showing completed and pending sections
 - Select which checkpoint to resume from
 
+**Import Old Network Files:**
+- Speed up repeat assessments by importing previous network.txt files
+- Automatically extracts unique /16 subnets from old scan results
+- Converts IPs into subnet ranges for Angry IP Scanner
+- Example: IPs like 10.2.45.123, 10.2.67.89, 10.3.12.45 become subnets 10.2.0.0/16, 10.3.0.0/16
+- Significantly reduces manual subnet entry for repeat assessments
+
 **Available Checkpoints:**
 1. Initial Setup and User Inputs
 2. Network Discovery (Ping Sweeps)
