@@ -74,19 +74,69 @@ chmod +x isa-automation.sh
 
 ## Usage
 
+### Standard Version
+
 Run the script as root:
 
 ```bash
 sudo ./isa-automation.sh
 ```
 
-The script will interactively prompt you for:
+### Resume-Enabled Version (New!)
+
+Use the checkpoint/resume version for long-running assessments:
+
+```bash
+sudo ./isa-automation-resume.sh
+```
+
+Both scripts will interactively prompt you for:
 - DHCP/Static IP configuration
 - Windows machine IP address
 - Email addresses for SMTP testing
 - IP exclusion preferences
 - Subnet ranges to scan
 - Various scanning options
+
+### Checkpoint/Resume Functionality
+
+The `isa-automation-resume.sh` script includes checkpoint functionality that allows you to:
+
+**Resume from any point if interrupted:**
+- Script saves progress after each major section
+- If script is interrupted or encounters an error, simply restart it
+- You'll see a menu showing completed and pending sections
+- Select which checkpoint to resume from
+
+**Available Checkpoints:**
+1. Initial Setup and User Inputs
+2. Network Discovery (Ping Sweeps)
+3. Nmap Vulnerability Scanning
+4. DNS Zone Transfer
+5. Anonymous Enumeration
+6. Metasploit Vulnerability Tests
+7. SMB Shares and SNMP Enumeration
+8. OS Version Detection
+9. SQL Server Testing
+10. Telnet Service Testing
+11. SMTP Relay Testing
+12. Outbound Connection Testing
+13. Web Filtering Tests
+14. Gowitness Web Screenshots
+15. Default HTTP Credentials
+16. ISP Information Gathering
+17. Gowitness Server Startup
+18. NetAudit Preparation
+19. NetAudit Execution
+
+**Checkpoint Files:**
+- State: `/root/Desktop/ISA/.checkpoint_state`
+- Config: `/root/Desktop/ISA/.resume_config`
+
+**Resume Menu Options:**
+- Select 1-19 to resume from that checkpoint
+- Select 0 to start fresh (deletes all checkpoints)
+- Select q to quit
 
 ## Configuration
 
