@@ -91,6 +91,26 @@ Use the checkpoint/resume version for long-running assessments:
 sudo ./isa-automation-resume.sh
 ```
 
+### Client/Company Name Feature
+
+**NEW:** The resume-enabled version now prompts for a client or company name at startup. This feature:
+
+- Creates folders named as `CLIENT-ISA` instead of just `ISA`
+- Helps organize multiple client assessments on the same machine
+- Automatically sanitizes the name (removes special characters, converts to uppercase)
+- Saves the client name in checkpoint files for resume functionality
+
+**Example:**
+- Input: `Acme Corporation`
+- Created folder: `/root/Desktop/ACME-CORPORATION-ISA`
+
+**Benefits:**
+- Keep multiple client assessments organized
+- Easily identify which assessment belongs to which client
+- Resume functionality works per client (each client has its own checkpoints)
+
+### Interactive Prompts
+
 Both scripts will interactively prompt you for:
 - DHCP/Static IP configuration
 - Windows machine IP address
@@ -139,8 +159,10 @@ The `isa-automation-resume.sh` script includes checkpoint functionality that all
 20. NetAudit Execution
 
 **Checkpoint Files:**
-- State: `/root/Desktop/ISA/.checkpoint_state`
-- Config: `/root/Desktop/ISA/.resume_config`
+- State: `/root/Desktop/CLIENT-ISA/.checkpoint_state`
+- Config: `/root/Desktop/CLIENT-ISA/.resume_config`
+
+(Replace CLIENT-ISA with your actual client name folder)
 
 **Resume Menu Options:**
 - Select 1-20 to resume from that checkpoint
@@ -149,7 +171,7 @@ The `isa-automation-resume.sh` script includes checkpoint functionality that all
 
 **Packet Capture:**
 - Automatically captures 10,000 network packets using tshark
-- Saves to `/root/Desktop/ISA/wireshark/capture_TIMESTAMP.pcap`
+- Saves to `/root/Desktop/CLIENT-ISA/Scans/Wireshark/capture_TIMESTAMP.pcap`
 - Useful for post-assessment traffic analysis
 - Can be opened with Wireshark for detailed inspection
 - Captures on detected network interface (typically eth0)
@@ -163,10 +185,10 @@ You can modify these variables at the top of the script:
 
 ## Output Structure
 
-All results are saved to `/root/Desktop/ISA/` with the following structure:
+All results are saved to `/root/Desktop/CLIENT-ISA/` (where CLIENT is your specified client name) with the following structure:
 
 ```
-ISA/
+CLIENT-ISA/
 ├── Scans/
 │   ├── Armitage/           # Metasploit module outputs
 │   ├── EyeWitness/         # Web screenshots
