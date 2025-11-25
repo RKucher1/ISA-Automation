@@ -1,0 +1,54 @@
+# ISA Automation Output Files
+ISA/
+ISAold/
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+temp_puppeteer_script.js
+
+# Network scan results
+*.txt
+!README.txt
+*.xml
+!.gitkeep
+
+# Database files
+*.db
+*.sqlite3
+
+# Screenshots and media
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.avi
+
+# CSV reports
+*.csv
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Credentials and sensitive data
+*password*
+*credentials*
+*secret*
+*.env
+
+# Responder logs
+Responder-Session.log
